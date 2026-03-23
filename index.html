@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lawn Journal">
+<meta name="theme-color" content="#1a2e1a">
+<title>Lawn Journal</title>
+<style>
+  :root {
+    --green-dark: #1a2e1a;
+    --green-mid: #2d4a2d;
+    --green-accent: #4a7c59;
+    --green-light: #8ab89a;
+    --green-pale: #e8f4ec;
+    --tan: #f5f2ed;
+    --tan-dark: #2a2318;
+    --tan-mid: #7a6a5a;
+    --white: #ffffff;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--tan);
+    color: var(--tan-dark);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overscroll-behavior: none;
+  }
+  /* HEADER */
+  #header {
+    background: linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 60%, #1a3020 100%);
+    padding: calc(14px + var(--safe-top)) 20px 14px;
+    border-bottom: 3px solid var(--green-accent);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #header-inner { display: flex; align-items: center; justify-content: space-between; }
+  #header-left { display: flex; align-items: flex-end; gap: 10px; }
+  #header-title { color: #e8f4ec; font-size: 22px; font-weight: normal; letter-spacing: 1px; }
+  #header-sub { font-size: 10px; letter-spacing: 2.5px; color: var(--green-light); text-transform: uppercase; margin-bottom: 2px; }
+  #header-count { font-size: 11px; color: #6a9a7a; margin-top: 3px; }
+  #export-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(138,184,154,0.4);
+    color: var(--green-light); padding: 6px 12px; border-radius: 6px;
+    font-size: 11px; cursor: pointer; letter-spacing: 0.5px; font-family: Georgia, serif;
+    white-space: nowrap;
+  }
+  /* NAV */
+  #nav {
+    background: #2a2318;
+    border-bottom: 1px solid #3a3020;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    position: sticky;
+    top: calc(74px + var(--safe-top));
+    z-index: 99;
+  }
+  #nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex: 1; min-width: 70px; background: transparent; color: #a08060;
+    border: none; border-bottom: 2px solid transparent;
+    padding: 11px 8px; font-size: 12px; cursor: pointer; white-space: nowrap;
+    font-family: Georgia, serif; letter-spacing: 0.3px; transition: all 0.15s;
+  }
+  .nav-btn.active { background: var(--green-accent); color: #fff; border-bottom-color: var(--green-light); }
+  /* CONTENT */
+  #content { padding: 16px 14px calc(24px + var(--safe-bottom)); max-width: 680px; margin: 0 auto; }
+  /* CARDS */
+  .entry-card {
+    background: var(--white); border: 1px solid #ddd8cc; border-radius: 8px;
+    margin-bottom: 10px; overflow: hidden; transition: box-shadow 0.2s;
+  }
+  .entry-card.open { box-shadow: 0 2px 14px rgba(0,0,0,0.09); }
+  .card-header {
+    padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .card-icon { font-size: 18px; flex-shrink: 0; }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-title { font-weight: bold; font-size: 14px; color: #1a1510; margin-bottom: 3px; }
+  .card-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 10px; padding: 1px 7px; border-radius: 10px;
+    letter-spacing: 0.4px; text-transform: uppercase; font-family: monospace; flex-shrink: 0;
+  }
+  .sev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .card-date { font-size: 11px; color: var(--tan-mid); margin-top: 3px; }
+  .card-chevron { color: #a09080; font-size: 13px; flex-shrink: 0; }
+  .card-body { padding: 0 14px 14px; }
+  .card-divider { height: 1px; margin: 0 0 12px; }
+  .card-notes { font-size: 13px; line-height: 1.75; color: var(--tan-dark); margin-bottom: 10px; }
+  .product-box {
+    background: #f8f4ee; border: 1px solid #e0d8c8; border-radius: 6px;
+    padding: 9px 13px; font-size: 13px; margin-bottom: 10px; line-height: 1.6;
+  }
+  .delete-btn {
+    background: none; border: 1px solid #ddd; border-radius: 5px;
+    padding: 4px 12px; cursor: pointer; font-size: 12px; color: #b05050;
+    font-family: Georgia, serif;
+  }
+  /* FORM */
+  .form-card { background: var(--white); border: 1px solid #ddd8cc; border-radius: 10px; padding: 20px 16px; }
+  .form-card h2 { font-size: 17px; font-weight: normal; color: var(--tan-dark); margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.single { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; }
+  label.field-label {
+    display: block; font-size: 10px; letter-spacing: 0.8px; color: var(--tan-mid);
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  input, select, textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid #c8b898; border-radius: 6px;
+    background: #faf8f4; font-size: 14px; color: var(--tan-dark);
+    font-family: Georgia, serif; outline: none; appearance: none; -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green-accent); }
+  textarea { resize: vertical; line-height: 1.6; min-height: 90px; }
+  .sev-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .sev-pill {
+    padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 12px;
+    border: 1px solid #ddd; background: #fafafa; color: #6a5a4a;
+    font-family: Georgia, serif; transition: all 0.15s;
+  }
+  .save-btn {
+    background: var(--green-mid); color: #fff; border: none; border-radius: 7px;
+    padding: 12px 28px; font-size: 14px; cursor: pointer; letter-spacing: 0.5px;
+    font-family: Georgia, serif; width: 100%; margin-top: 8px; transition: background 0.3s;
+  }
+  .save-btn.saved { background: var(--green-accent); }
+  /* STATS */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .stat-card {
+    background: var(--white); border-radius: 8px; padding: 13px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .stat-num { font-size: 24px; font-weight: bold; }
+  .stat-lbl { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px; }
+  .stat-total { background: #2a2318; }
+  .season-card {
+    background: var(--white); border: 1px solid #ddd8cc; border-radius: 8px;
+    padding: 13px 16px; margin-bottom: 9px;
+  }
+  .season-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .season-name { font-weight: bold; font-size: 14px; }
+  .season-count { font-size: 12px; color: var(--tan-mid); }
+  /* LEGEND */
+  .legend-section { background: var(--white); border: 1px solid #ddd8cc; border-radius: 10px; padding: 18px 16px; margin-bottom: 14px; }
+  .legend-section h3 { font-size: 15px; font-weight: normal; margin-bottom: 12px; }
+  .legend-cat {
+    border-radius: 7px; padding: 11px 14px; margin-bottom: 10px;
+  }
+  .legend-cat-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .legend-cat-name { font-weight: bold; font-size: 13px; letter-spacing: 0.2px; }
+  .legend-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .legend-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+  .sev-row-legend { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .sev-desc { font-size: 12px; color: var(--tan-mid); }
+  .calendar-dark { background: #1a2e1a; border: 1px solid #3a5a3a; border-radius: 10px; padding: 18px 16px; }
+  .calendar-dark h3 { font-size: 14px; font-weight: normal; color: var(--green-light); letter-spacing: 0.5px; margin-bottom: 12px; }
+  .cal-row { display: flex; gap: 10px; margin-bottom: 11px; font-size: 12px; }
+  .cal-date { min-width: 110px; color: var(--green-light); font-family: monospace; font-size: 11px; padding-top: 1px; flex-shrink: 0; }
+  .cal-label { color: #e8f4ec; margin-bottom: 2px; font-size: 13px; }
+  .cal-note { color: #6a9a7a; font-size: 11px; }
+  /* FILTER BAR */
+  #filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  #search-input {
+    flex: 1; min-width: 130px; padding: 8px 12px; border: 1px solid #c8b898;
+    border-radius: 6px; background: var(--white); font-size: 13px; color: var(--tan-dark);
+    font-family: Georgia, serif;
+  }
+  .filter-select {
+    padding: 8px 10px; border: 1px solid #c8b898; border-radius: 6px;
+    background: var(--white); font-size: 12px; color: var(--tan-dark);
+    font-family: Georgia, serif; cursor: pointer; appearance: none; -webkit-appearance: none;
+  }
+  #entry-count { font-size: 12px; color: var(--tan-mid); margin-bottom: 12px; }
+  .empty-state { text-align: center; padding: 48px 20px; color: #a09080; }
+  .empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(60px);
+    background: var(--green-accent); color: #fff; padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; letter-spacing: 0.5px; z-index: 999; transition: transform 0.3s ease;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  /* IMPORT */
+  #import-file { display: none; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-inner">
+    <div id="header-left">
+      <span style="font-size:24px">🌿</span>
+      <div>
+        <div id="header-sub">Nashville · Zone 7B</div>
+        <div id="header-title">Lawn Journal</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:7px;flex-direction:column;align-items:flex-end">
+      <button id="export-btn" onclick="exportData()">⬇ Export</button>
+      <label for="import-file" style="background:rgba(255,255,255,0.07);border:1px solid rgba(138,184,154,0.3);color:#6a9a7a;padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;letter-spacing:0.5px;font-family:Georgia,serif;white-space:nowrap;">⬆ Import</label>
+      <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+    </div>
+  </div>
+  <div id="header-count">Loading...</div>
+</div>
+
+<div id="nav">
+  <button class="nav-btn active" data-view="log" onclick="switchView('log')">📋 Log</button>
+  <button class="nav-btn" data-view="add" onclick="switchView('add')">✏️ New Entry</button>
+  <button class="nav-btn" data-view="stats" onclick="switchView('stats')">📊 Summary</button>
+  <button class="nav-btn" data-view="legend" onclick="switchView('legend')">📖 Legend</button>
+</div>
+
+<div id="content"></div>
+<div id="toast">✓ Saved!</div>
+
+<script>
+const CATS = {
+  observation: { label:"Observation", icon:"👁", color:"#4a7c59", bg:"#e8f4ec", border:"#b8d9c4",
+    subs:["Turf Color","Weed Pressure","Pest/Disease","Bare Patches","Fungal Signs","General Health"] },
+  action: { label:"Action Taken", icon:"⚡", color:"#2c5f8a", bg:"#e6f0f8", border:"#a8c8e8",
+    subs:["Mowing","Fertilizing","Overseeding","Aeration","Dethatching","Irrigation","Edging/Cleanup"] },
+  input: { label:"Product/Input", icon:"🧪", color:"#7a4a8c", bg:"#f3eaf8", border:"#d4b8e8",
+    subs:["Pre-Emergent","Post-Emergent","Fertilizer","Fungicide","Pest Control","Soil Amendment","Seed"] },
+  condition: { label:"Condition", icon:"🌡", color:"#8a5c2c", bg:"#f8f0e6", border:"#e8caa8",
+    subs:["Soil Temp","Air Temp","Rainfall","Drought Stress","Frost Event","Heat Event"] },
+  outcome: { label:"Outcome", icon:"📊", color:"#5c7a2c", bg:"#f0f5e6", border:"#c8dea8",
+    subs:["Positive Response","No Response","Negative Response","Weed Kill","Recovery","Germination"] },
+};
+const SEVS = {
+  info:   { label:"Info",   color:"#2c5f8a", dot:"#4a9fd4" },
+  low:    { label:"Low",    color:"#4a7c59", dot:"#6abf83" },
+  medium: { label:"Medium", color:"#8a6c2c", dot:"#e8a830" },
+  high:   { label:"High",   color:"#8a2c2c", dot:"#e05555" },
+};
+const SEASONS = {"01":"Winter","02":"Winter","03":"Early Spring","04":"Spring","05":"Late Spring",
+  "06":"Early Summer","07":"Summer","08":"Late Summer","09":"Early Fall","10":"Fall","11":"Late Fall","12":"Winter"};
+const ZONES = ["Full Lawn","Front Lawn","Back Lawn","Side Yard","Beds","Slope/Problem Area","Other"];
+const SAMPLE = [
+  { id:"s1", date:"2025-02-28", category:"action", subcategory:"Pre-Emergent",
+    title:"First pre-emergent application",
+    notes:"Soil temp hit 52°F. Applied Prodiamine 65 WDG at 0.5 lb/1000 sq ft. Watered in with 0.5\" irrigation. Target: crabgrass and poa annua suppression.",
+    product:"Prodiamine 65 WDG", rate:"0.5 lb / 1,000 sq ft", severity:"info", zone:"Full Lawn" },
+  { id:"s2", date:"2025-03-15", category:"observation", subcategory:"Turf Color",
+    title:"Green-up beginning — front lawn",
+    notes:"Front lawn showing first signs of green-up near south-facing beds. Back lawn still largely dormant. Henbit emerging along fence line — needs post-emergent attention.",
+    product:"", rate:"", severity:"low", zone:"Front Lawn" },
+];
+
+let entries = [];
+let currentView = "log";
+let expandedId = null;
+let filterCat = "all";
+let filterSeason = "all";
+let searchQ = "";
+let formState = {
+  date: today(), category:"observation", subcategory:"", title:"",
+  notes:"", product:"", rate:"", severity:"info", zone:"Full Lawn"
+};
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function getSeason(d) { return SEASONS[d.slice(5,7)] || "Unknown"; }
+function fmtDate(d) { const [y,m,dd]=d.split("-"); return `${m}/${dd}/${y}`; }
+
+// --- STORAGE ---
+function load() {
+  try {
+    const raw = localStorage.getItem("lawnjournal_v1");
+    if (raw) { entries = JSON.parse(raw); }
+    else { entries = [...SAMPLE]; save(); }
+  } catch(e) { entries = [...SAMPLE]; }
+}
+function save() {
+  try { localStorage.setItem("lawnjournal_v1", JSON.stringify(entries)); } catch(e) {}
+  updateCount();
+}
+function updateCount() {
+  document.getElementById("header-count").textContent =
+    `${entries.length} entr${entries.length===1?"y":"ies"} recorded · Tall Fescue / KBG`;
+}
+
+// --- EXPORT / IMPORT ---
+function exportData() {
+  const blob = new Blob([JSON.stringify(entries, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lawn-journal-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("📁 Exported!");
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (Array.isArray(data)) {
+        entries = data; save(); render();
+        showToast(`✓ Imported ${data.length} entries`);
+      }
+    } catch(err) { showToast("⚠ Import failed"); }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+}
+
+// --- TOAST ---
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+// --- VIEW SWITCHING ---
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll(".nav-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === v);
+  });
+  if (v === "add") {
+    formState.date = today();
+    formState.title = ""; formState.notes = ""; formState.product = ""; formState.rate = "";
+    formState.subcategory = "";
+  }
+  render();
+}
+
+// --- RENDER ---
+function render() {
+  const c = document.getElementById("content");
+  if (currentView === "log") c.innerHTML = renderLog();
+  else if (currentView === "add") c.innerHTML = renderAdd();
+  else if (currentView === "stats") c.innerHTML = renderStats();
+  else if (currentView === "legend") c.innerHTML = renderLegend();
+  bindEvents();
+}
+
+function filtered() {
+  return entries
+    .filter(e => filterCat === "all" || e.category === filterCat)
+    .filter(e => filterSeason === "all" || getSeason(e.date) === filterSeason)
+    .filter(e => {
+      if (!searchQ) return true;
+      const q = searchQ.toLowerCase();
+      return (e.title||"").toLowerCase().includes(q)
+          || (e.notes||"").toLowerCase().includes(q)
+          || (e.product||"").toLowerCase().includes(q);
+    })
+    .sort((a,b) => b.date.localeCompare(a.date));
+}
+
+function renderLog() {
+  const list = filtered();
+  const allSeasons = [...new Set(entries.map(e => getSeason(e.date)))];
+  let html = `<div id="filter-bar">
+    <input id="search-input" placeholder="Search entries…" value="${esc(searchQ)}" oninput="searchQ=this.value;render()">
+    <select class="filter-select" onchange="filterCat=this.value;render()">
+      <option value="all"${filterCat==="all"?" selected":""}>All Types</option>
+      ${Object.entries(CATS).map(([k,v])=>`<option value="${k}"${filterCat===k?" selected":""}>${v.icon} ${v.label}</option>`).join("")}
+    </select>
+    <select class="filter-select" onchange="filterSeason=this.value;render()">
+      <option value="all"${filterSeason==="all"?" selected":""}>All Seasons</option>
+      ${allSeasons.map(s=>`<option value="${s}"${filterSeason===s?" selected":""}>${s}</option>`).join("")}
+    </select>
+  </div>
+  <div id="entry-count">${list.length} of ${entries.length} entries</div>`;
+
+  if (list.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">🌱</div><div>No entries found. Add your first entry.</div></div>`;
+  }
+  list.forEach(e => { html += renderCard(e); });
+  return html;
+}
+
+function renderCard(e) {
+  const cat = CATS[e.category] || CATS.observation;
+  const sev = SEVS[e.severity] || SEVS.info;
+  const open = expandedId === e.id;
+  const sub = e.subcategory || cat.subs[0];
+  return `<div class="entry-card${open?" open":""}" id="card-${e.id}" style="border-left:4px solid ${cat.color}${open?";border-color:"+cat.border:""}">
+    <div class="card-header" onclick="toggleCard('${e.id}')">
+      <span class="card-icon">${cat.icon}</span>
+      <div class="card-meta">
+        <div class="card-title">${esc(e.title)}</div>
+        <div class="card-badges">
+          <span class="badge" style="background:${cat.bg};color:${cat.color};border:1px solid ${cat.border}">${esc(sub)}</span>
+          <span class="sev-dot" style="background:${sev.dot}" title="${sev.label}"></span>
+        </div>
+        <div class="card-date">${fmtDate(e.date)} · ${getSeason(e.date)} · ${esc(e.zone||"")}</div>
+      </div>
+      <span class="card-chevron">${open?"▲":"▼"}</span>
+    </div>
+    ${open ? `<div class="card-body">
+      <div class="card-divider" style="background:${cat.border}"></div>
+      <div class="card-notes">${e.notes ? esc(e.notes).replace(/\n/g,"<br>") : "<em style='color:#a09080'>No notes.</em>"}</div>
+      ${(e.product||e.rate) ? `<div class="product-box">${e.product?`<div><strong>Product:</strong> ${esc(e.product)}</div>`:""}${e.rate?`<div><strong>Rate:</strong> ${esc(e.rate)}</div>`:""}</div>` : ""}
+      <button class="delete-btn" onclick="deleteEntry('${e.id}')">Delete Entry</button>
+    </div>` : ""}
+  </div>`;
+}
+
+function renderAdd() {
+  const cat = CATS[formState.category];
+  const showProduct = (formState.category === "action" || formState.category === "input");
+  return `<div class="form-card">
+    <h2>✏️ New Journal Entry</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label">Date</label>
+        <input type="date" value="${formState.date}" onchange="formState.date=this.value">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Zone / Area</label>
+        <select onchange="formState.zone=this.value">
+          ${ZONES.map(z=>`<option value="${z}"${formState.zone===z?" selected":""}>${z}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label">Category</label>
+        <select onchange="formState.category=this.value;formState.subcategory='';render()">
+          ${Object.entries(CATS).map(([k,v])=>`<option value="${k}"${formState.category===k?" selected":""}>${v.icon} ${v.label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Subcategory</label>
+        <select onchange="formState.subcategory=this.value">
+          ${cat.subs.map(s=>`<option value="${s}"${formState.subcategory===s?" selected":""}>${s}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group">
+        <label class="field-label">Title <span style="color:#b05050">*</span></label>
+        <input type="text" placeholder="e.g. Applied pre-emergent — soil temp 52°F"
+          value="${esc(formState.title)}" oninput="formState.title=this.value">
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group">
+        <label class="field-label">Notes / Observations</label>
+        <textarea placeholder="Be specific: product names, rates, conditions, what you saw…" oninput="formState.notes=this.value">${esc(formState.notes)}</textarea>
+      </div>
+    </div>
+    ${showProduct ? `<div class="form-row">
+      <div class="form-group">
+        <label class="field-label">Product Name</label>
+        <input type="text" placeholder="e.g. Prodiamine 65 WDG" value="${esc(formState.product)}" oninput="formState.product=this.value">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Rate / Amount</label>
+        <input type="text" placeholder="e.g. 0.5 lb / 1,000 sq ft" value="${esc(formState.rate)}" oninput="formState.rate=this.value">
+      </div>
+    </div>` : ""}
+    <div class="form-group" style="margin-bottom:18px">
+      <label class="field-label">Severity / Priority</label>
+      <div class="sev-row">
+        ${Object.entries(SEVS).map(([k,v])=>`
+          <button class="sev-pill" onclick="formState.severity='${k}';render()"
+            style="${formState.severity===k?`border:2px solid ${v.dot};background:${v.dot}22;color:${v.color}`:""}">
+            ${v.label}
+          </button>`).join("")}
+      </div>
+    </div>
+    <button class="save-btn" id="save-btn" onclick="submitEntry()">Save Entry</button>
+  </div>`;
+}
+
+function renderStats() {
+  const allSeasons = [...new Set(entries.map(e => getSeason(e.date)))];
+  let html = `<div class="stat-grid">
+    ${Object.entries(CATS).map(([k,v])=>{
+      const n = entries.filter(e=>e.category===k).length;
+      return `<div class="stat-card" style="border:1px solid ${v.border};border-left:4px solid ${v.color}">
+        <span style="font-size:20px">${v.icon}</span>
+        <div><div class="stat-num" style="color:${v.color}">${n}</div>
+        <div class="stat-lbl" style="color:${v.color}88">${v.label}</div></div>
+      </div>`;
+    }).join("")}
+    <div class="stat-card stat-total" style="grid-column:span 2">
+      <span style="font-size:20px">📁</span>
+      <div><div class="stat-num" style="color:#8ab89a">${entries.length}</div>
+      <div class="stat-lbl" style="color:#6a9a7a">Total Entries</div></div>
+    </div>
+  </div>
+  <h3 style="font-size:14px;color:var(--tan-dark);margin-bottom:10px;font-weight:normal;letter-spacing:0.5px">BY SEASON</h3>`;
+  if (allSeasons.length === 0) {
+    html += `<div style="color:#a09080;font-size:14px">No data yet.</div>`;
+  }
+  allSeasons.forEach(season => {
+    const se = entries.filter(e=>getSeason(e.date)===season);
+    html += `<div class="season-card">
+      <div class="season-header">
+        <span class="season-name">${season}</span>
+        <span class="season-count">${se.length} entries</span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${Object.entries(CATS).map(([k,v])=>{
+          const n=se.filter(e=>e.category===k).length;
+          if(!n) return "";
+          return `<span class="badge" style="background:${v.bg};color:${v.color};border:1px solid ${v.border}">${v.icon} ${v.label} (${n})</span>`;
+        }).join("")}
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderLegend() {
+  let html = `<div class="legend-section">
+    <h3>📖 Framework & Legend</h3>
+    <p style="font-size:13px;line-height:1.8;color:#4a3a2a;margin-bottom:14px">
+      Five data dimensions that build seasonal pattern recognition — turning one year's guesswork into the next year's precision.
+    </p>
+    ${Object.entries(CATS).map(([k,v])=>`
+      <div class="legend-cat" style="background:${v.bg};border:1px solid ${v.border}">
+        <div class="legend-cat-header">
+          <span style="font-size:17px">${v.icon}</span>
+          <span class="legend-cat-name" style="color:${v.color}">${v.label}</span>
+        </div>
+        <div class="legend-tags">
+          ${v.subs.map(s=>`<span class="legend-tag" style="background:#fff;color:${v.color};border:1px solid ${v.border}">${s}</span>`).join("")}
+        </div>
+      </div>`).join("")}
+  </div>
+  <div class="legend-section">
+    <h3>🔴 Severity / Priority Flags</h3>
+    ${Object.entries(SEVS).map(([k,v])=>`
+      <div class="sev-row-legend">
+        <span class="sev-dot" style="background:${v.dot};width:12px;height:12px"></span>
+        <strong style="color:${v.color};font-size:13px">${v.label}</strong>
+        <span class="sev-desc">
+          ${{high:"Urgent — narrow action window or active damage",
+             medium:"Monitor — action needed within days/weeks",
+             low:"Note — general observation, no immediate action",
+             info:"Record — planned action or routine task"}[k]}
+        </span>
+      </div>`).join("")}
+  </div>
+  <div class="calendar-dark">
+    <h3>🗓 Nashville Zone 7B Key Dates</h3>
+    ${[
+      ["Late Feb – Early Mar","Pre-Emergent Window","Soil temp 50–55°F; crabgrass/poa annua target"],
+      ["Late March","Spring Green-Up","Begin mowing when growth resumes"],
+      ["~April 5","Last Frost","Safe for warm-season annuals in beds"],
+      ["June – September","Fungal Pressure Season","Brown patch, pythium — watch humidity"],
+      ["Sept 15 – Oct 15","Overseeding Window","Most critical window of the year for fescue"],
+      ["Early September","Fall Aeration","Before overseeding; break clay compaction"],
+      ["~November 5","First Frost","Final mow, winterizer fertilizer timing"],
+      ["Dec – Jan","Dormant Seeding","Emergency only; poor germination odds"],
+    ].map(([date,label,note])=>`
+      <div class="cal-row">
+        <div class="cal-date">${date}</div>
+        <div><div class="cal-label">${label}</div><div class="cal-note">${note}</div></div>
+      </div>`).join("")}
+  </div>`;
+  return html;
+}
+
+// --- ACTIONS ---
+function toggleCard(id) {
+  expandedId = expandedId === id ? null : id;
+  render();
+}
+function deleteEntry(id) {
+  if (!confirm("Delete this entry?")) return;
+  entries = entries.filter(e => e.id !== id);
+  expandedId = null;
+  save(); render();
+  showToast("🗑 Deleted");
+}
+function submitEntry() {
+  if (!formState.title.trim()) {
+    document.querySelector("input[type=text]") && document.querySelector("input[type=text]").focus();
+    return;
+  }
+  const entry = {
+    id: Date.now().toString(),
+    date: formState.date,
+    category: formState.category,
+    subcategory: formState.subcategory || CATS[formState.category].subs[0],
+    title: formState.title.trim(),
+    notes: formState.notes.trim(),
+    product: formState.product.trim(),
+    rate: formState.rate.trim(),
+    severity: formState.severity,
+    zone: formState.zone,
+  };
+  entries.push(entry);
+  save();
+  showToast("✓ Entry saved!");
+  formState.title = ""; formState.notes = ""; formState.product = ""; formState.rate = ""; formState.subcategory = "";
+  setTimeout(() => switchView("log"), 700);
+}
+function bindEvents() {
+  // textarea sync (re-bind after render since we use innerHTML)
+  const ta = document.querySelector("textarea");
+  if (ta) ta.value = formState.notes;
+}
+function esc(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// --- INIT ---
+load();
+render();
+</script>
+</body>
+</html>
